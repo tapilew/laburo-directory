@@ -1,0 +1,6 @@
+
+# Frontend Rules
+
+## File Naming
+- Use **kebab-case** for all file names (e.g., `network-checker.tsx`, `user-profile.ts`).
+- Component files should match the kebab-case version of the component name.

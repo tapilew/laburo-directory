@@ -1,1 +1,1 @@
-- [ ] add scroll network to wagmi frontend
+- [x] add scroll network to wagmi frontend
