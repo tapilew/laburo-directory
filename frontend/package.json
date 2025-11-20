@@ -10,12 +10,15 @@
   },
   "dependencies": {
     "@crossmint/client-sdk-react-ui": "^2.6.3",
+    "@t3-oss/env-core": "^0.13.8",
+    "@t3-oss/env-nextjs": "^0.13.8",
     "@tanstack/react-query": "5.45.1",
     "next": "14.2.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "viem": "latest",
-    "wagmi": "latest"
+    "wagmi": "latest",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^20.12.10",

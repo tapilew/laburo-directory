@@ -3,12 +3,14 @@
 ## develop
 
 - [x] add scroll network to wagmi frontend
-- [ ] implement crossmint
-- [ ] t3 env
+- [x] implement crossmint
+- [x] t3 env
 - [ ] shadcn/ui
+- [ ] add login button
 - [ ] deploy vercel
+- [ ] draft first pitch deck `/documnents/pitch-deck.pdf`
 
-## deliver
+## deliver - `/documents`
 
 - [ ] Git repo: [LINK]
 - [ ] Pitch deck: [NOMBRE_PDF]

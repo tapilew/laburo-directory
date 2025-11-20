@@ -24,9 +24,7 @@ export const gigRegistryAbi = [
     type: "function",
     stateMutability: "view",
     name: "getGig",
-    inputs: [
-      { name: "_gigId", type: "uint256", internalType: "uint256" },
-    ],
+    inputs: [{ name: "_gigId", type: "uint256", internalType: "uint256" }],
     outputs: [
       { name: "id", type: "uint256", internalType: "uint256" },
       { name: "buyer", type: "address", internalType: "address" },
@@ -35,10 +33,12 @@ export const gigRegistryAbi = [
       { name: "description", type: "string", internalType: "string" },
       { name: "budget", type: "uint256", internalType: "uint256" },
       { name: "deadline", type: "uint256", internalType: "uint256" },
-      { name: "status", type: "uint8", internalType: "enum GigRegistry.GigStatus" },
+      {
+        name: "status",
+        type: "uint8",
+        internalType: "enum GigRegistry.GigStatus",
+      },
       { name: "bidCount", type: "uint256", internalType: "uint256" },
     ],
   },
 ] as const;
-
-

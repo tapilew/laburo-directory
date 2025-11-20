@@ -1,5 +1,6 @@
 "use client";
 
+import { env } from "@/env";
 import {
   CrossmintProvider,
   CrossmintAuthProvider,
@@ -19,11 +20,7 @@ export function Providers(props: {
   const [config] = useState(() => getConfig());
   const [queryClient] = useState(() => new QueryClient());
 
-  const apiKey = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY is not set");
-  }
+  const apiKey = env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
 
   return (
     <CrossmintProvider apiKey={apiKey}>
