@@ -13,6 +13,8 @@ import {
 
 import { GIG_REGISTRY_ADDRESS, gigRegistryAbi } from "@/abi";
 
+import { Button } from "@/components/ui/button";
+
 type GigTuple = readonly [
   bigint,
   `0x${string}`,
@@ -413,6 +415,8 @@ function App() {
           </p>
         )}
       </section>
+
+      <Button>Click me</Button>
     </div>
   );
 }

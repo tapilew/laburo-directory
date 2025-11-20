@@ -5,7 +5,7 @@
 - [x] add scroll network to wagmi frontend
 - [x] implement crossmint
 - [x] t3 env
-- [ ] shadcn/ui
+- [x] shadcn/ui
 - [ ] add login button
 - [ ] deploy vercel
 - [ ] draft first pitch deck `/documnents/pitch-deck.pdf`
