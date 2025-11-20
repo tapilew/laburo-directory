@@ -1,210 +1,156 @@
 # Laburo Directory
 
-Decentralized Recruitment Platform
+Decentralized, **staked** recruitment directory.
 
 ## 1. The Problem
 
-Recruitment is broken by noise.
+Recruitment is broken by noise and low skin-in-the-game.
 
-- **Recruiters** waste hours scraping outdated databases (LinkedIn) for candidates who aren't looking.
-- **Top Talent** gets spammed by low-quality offers because their contact info is public or sold in bulk.
-- **Inefficiency:** There is no direct value transfer. Recruiters pay platform subscriptions, not for the specific data they need _now_.
+- **Recruiters** burn hours on stale, low-intent profiles (LinkedIn, bulk databases, scraped lists).
+- **Job seekers** get spammed by bots and low‑quality outreach because their contact info is cheap to abuse.
+- **No economic signal**: being listed costs nothing, so everyone can lie, overstate skills, or go inactive with zero downside.
 
-## 2. The Solution: Laburo Directory
+## 2. The Solution: Staked Talent Directory
 
-A minimalist, agentic recruitment directory where candidate data is curated by AI and gated by the **x402 protocol**.
+Laburo Directory is a **staked, on‑chain talent directory** where:
 
-- **Agentic Curation:** "Talent Agents" (AI) curate profiles and store them on **Arkiv** with Time-To-Live (TTL), ensuring data is fresh (e.g., "Active for 24h only").
-- **Blind Discovery:** Recruiters search for skills (e.g., "Rust Engineer, ZK exp") and see anonymized summaries.
-- **x402 Micro-Payments:** To reveal a candidate's contact info, the recruiter streams a micropayment (USDC on Scroll) directly to the agent via **Crossmint**. No subscriptions. Pay-per-lead.
+- **Job seekers stake ETH** to list a profile. Lying or disappearing becomes expensive.
+- **Recruiters (or their AI agents) pay per lead** to unlock contact info via the **x402 pay‑to‑reveal protocol**.
+- **Arkiv** stores profiles and dispute evidence with **Time‑To‑Live (TTL)** and an **on‑chain audit trail**.
 
-## 3. How It Works (Technical MVP)
+Core ideas:
 
-- **Frontend:** A single-page "Command Center" for recruiters.
-  - _Feature:_ Semantic search bar ("Find me a dev who knows Scroll").
-  - _Action:_ "Reveal Contact" button triggers the payment flow.
-- **Backend (The Agent):**
-  - **Arkiv Integration:** Stores candidate metadata with a strict 1-hour TTL. If a candidate isn't hired or renewed, they vanish. This guarantees "Active" status.
-  - **x402 Protocol:** Intercepts requests for sensitive data (email/Telegram). Returns `402 Payment Required` until a transaction is verified on Scroll.
-- **Settlement:**
-  - **Crossmint:** Embedded wallet handles the USDC payment instantly, removing friction for the recruiter.
-
-## 4. The Hackathon Deliverables Strategy
-
-- **Git Repo:** A monorepo containing the Python FastAPI backend (x402 logic) and the simple React/HTML frontend. Clean, commented code proving the `402` status flow.
-- **Brainstorming:** A PDF showing the evolution from "Decentralized Upwork" to this streamlined "Pay-to-Reveal" directory, focusing on minimizing friction for recruiters.
-- **Business Model Canvas:**
-  - _Value Prop:_ Fresh data guaranteed (TTL). No monthly fees.
-  - _Revenue:_ % fee on every unlock (Micro-transaction model).
-  - _Customer:_ Tech Recruiters, Headhunters.
-- **Data Model (Arkiv):** A JSON schema diagram showing the `Public_Profile` (Skills, Bio) vs. `Private_Data` (Email, Phone) separation, and the `TTL` field usage.
-- **Design:** Low-fidelity wireframes of the "Search -> 402 Block -> Pay -> Reveal" user flow. Minimalist aesthetic.
-- **Pitch Video (Demo):** A 60-second screen recording:
-  1.  Recruiter types "Solidity Dev".
-  2.  Clicks "Reveal".
-  3.  Browser shows "402 Payment Required".
-  4.  Recruiter clicks "Pay with Crossmint".
-  5.  Contact info appears instantly.
-
-## 5. Why It Wins
-
-- **Feasibility:** It was built in one afternoon by a single developer, proving the DevX of the stack (Arkiv + Crossmint).
-- **Innovation:** It moves away from "Subscriptions" to "Agentic Commerce" (paying an agent for a specific unit of work/data).
-- **Arkiv Usage:** Perfect use of **TTL** (Time-To-Live) to solve the "stale data" problem in recruiting.
-- **Crossmint Usage:** Demonstrates seamless crypto payments in a B2B workflow.
-
-## 6. Roadmap (Future)
-
-- **Freelancer Portal:** Allow talent to upload their own profiles and set their "Reveal Price".
-- **Reputation:** On-chain verification of skills.
-- **Auto-Match:** Agents proactively notifying recruiters of new matches.
-
-# Sponsors & Bounties
-
-## DeFi + AI Agents
-
-Herramientas financieras abiertas potenciadas por inteligencia artificial: automatización, agentes onchain y nuevas experiencias financieras programables
-
-En esta categoría, los builders podrán construir herramientas financieras abiertas potenciadas por inteligencia artificial y agentes autónomos.
-
-Esto puede abarcar protocolos DeFi programables, automatización inteligente de estrategias, wallets o bots que operen onchain, análisis predictivo, mecanismos de riesgo dinámico, o nuevas interfaces para interactuar con activos digitales.
-
-Los proyectos deben enfocarse en crear experiencias financieras más accesibles, eficientes y seguras, aprovechando la combinación de Blockchain + AI para habilitar nuevas capacidades que antes no eran posibles.
-
-## Arkiv
-
-### 💰Arkiv- Prize $1500 - Micro Bounties
-
-Desafíos pequeños y enfocados para que más builders experimenten con Arkiv.
-
-Micro Bounties
-
-    ⚡ Mejor uso en tiempo real del stack Arkiv — $300
-
-    ⏳ Mejor uso de expiración de tiempo (TTL) — $300
-
-    📊 Mejor integración con Open Analytics — $300
-
-    💸 Mejor caso de uso DeFi — $300
-
-    🌐 Mejor caso de uso DePIN — $300
-
-Los micro-bounties están diseñados para incentivar experimentos, prototipos y pruebas de concepto que demuestren una funcionalidad específica de forma clara y creativa.
-
-NOTA: Estos premios no son combinables con el track principal.
-
-### 💰Arkiv- Prize $3500 - Track Principal
-
-Crea el proyecto más robusto, sofisticado y técnicamente avanzado usando Arkiv como componente principal
-
-Construí el proyecto más potente, pulido y técnicamente profundo usando Arkiv como componente central.
-
-Buscamos aplicaciones que lleven Arkiv al límite y aporten insights reales sobre la experiencia de desarrollo (DevX).
-
-Premios
-
-🥇 1° Puesto - $2,000
-
-🥈 2° Puesto - $1,000
-
-🥉 3° Puesto - $500
-
-Qué estamos buscando
-
-Un proyecto que use Arkiv de manera profunda y significativa, no solo como un complemento.
-
-Las propuestas ideales deberían:
-
-    Utilizar 2 o más funcionalidades de Arkiv (ej.: CRUD + Query, anotaciones + filtros cross-entity)
-
-    Llevar Arkiv al máximo de sus capacidades:
-
-        Consultas avanzadas
-
-        UX consciente del TTL
-
-        Suscripciones en tiempo real
-
-        Integraciones novedosas vía JSON-RPC
-
-    Entregar feedback accionable para mejorar la DevX:
-
-        Un runbook corto
-
-        Problemas con pasos reproducibles
-
-        Un documento de 1 página con puntos de fricción y sugerencias
-
-    Presentar un demo completamente funcional
-
-Entregables
-
-    Demo público en vivo
-
-    Repositorio público + README (uso, instalación e integración con Arkiv)
-
-    Video demo de 2 a 3 minutos
-
-Criterios de evaluación
-
-    40% Técnica
-
-    30% Producto
-
-    30% Marketing / BD / GTM
-
-Beneficios adicionales
-
-    Mención destacada en las redes de Arkiv y en Builder Spotlight
-
-    Soporte continuo del equipo después del hackathon
-
-    Posible introducción al Golem Ecosystem Fund para futuras oportunidades de financiamiento
-
-## 💰Crossmint - Prize $1500 - Mejor Proyecto integrando Crossmint
-
-Cualquier proyecto que use Crossmint para pagos, custody, onramps o experiencias embedded Web3/Fintech.
-
-Premios
-
-💸 Mejor Proyecto de Fintech / Finanzas -💰$500
-
-Cualquier desarrollo relacionado con fintech, stablecoins, pagos o herramientas financieras. ¡Sé creativo y generá impacto!
-
-🤖 Mejor Caso de Uso en Agentic Commerce -💰$500
-
-Construí flujos de comercio utilizando workflows agentic, x402, APIs de Crossmint o agentes autónomos dentro de una experiencia de compra.
-
-📱 Mejor Experiencia de Usuario (UX) -💰$500
-
-Gana el proyecto con la experiencia más intuitiva, fluida y pulida.Bonus: puntos extra para los proyectos mobile-first.
-
-Requisitos para participar
-
-    Tu proyecto debe utilizar una integración funcional de Crossmint (testnet está perfecto).
-
-    Debe estar completo, operativo y desplegado para que podamos probarlo.
-
-    Los ganadores serán seleccionados según creatividad, calidad de implementación, experiencia de usuario (UX) y uso de Crossmint.
-
-    Integraciones incompletas o con errores pueden quedar descalificadas.
-
-Nota: Si ningún proyecto alcanza el nivel mínimo de calidad, es posible que no se otorgue el premio. ¡Pero realmente queremos entregarlo! Acercate por ayuda, feedback o guía durante el evento, estamos para apoyarte.
-
-## 💰Chroma Labs - Prize $1000 - Mejores proyectos usando Spark A1
-
-Apps que unan diseño + Web3: identidad, branding, composables visuales o templates on-chain.
-
-Premios
-
-🥇 $500 — Best Complete DApp
-
-A la aplicación descentralizada más innovadora y funcional construida usando Spark A1.
-
-🥇 $300 — Most Innovative
-
-Al mejor uso de las herramientas de auditoría de seguridad y análisis de smart contracts.
-
-🥇 $200 — Best Use of Chroma Tools
-
-Al uso más creativo e innovador de servidores MCP (documentación de protocolo, simulación de transacciones, validación de direcciones).
+- **Skin in the game:** Profiles carry a visible stake (escrow) that can be slashed only under strict fraud conditions in future versions.
+- **Monetized bots:** We don’t fight bots; we make them **pay you**. Agents can crawl/analyze the directory, but x402 gates sensitive data behind micro‑payments.
+- **Freshness by design:** Arkiv TTL means profiles and evidence auto‑expire, so recruiters only see **currently active** talent.
+
+## 3. How It Works (MVP Architecture)
+
+### Roles
+
+- **Talent (Job Seekers):** stake ETH, publish a profile.
+- **Recruiters / Talent Agents (AI):** search, evaluate, and pay to reveal contact.
+- **Protocol Backend:** enforces x402 (HTTP `402 Payment Required`) and writes/read from Arkiv.
+
+### On‑chain: Staked Profiles (GigRegistry)
+
+We reuse a simple contract (`GigRegistry`, deployed on Scroll Sepolia at  
+`0xe734917ec960dbabcff216ea9d50cf5f7c0b81d5`) as the first building block:
+
+- `createGig(title, description, deadline)` with `msg.value`:
+  - Interpreted in this MVP as **“Stake & List Profile”**, not a classic gig budget.
+  - `title` → **Role / Skillset** (e.g. “Rust Engineer, ZK exp”).
+  - `description` → **Public summary**.
+  - `budget` (ETH) → **Staked amount**, visible in the UI as “Skin in the game”.
+- `getGig` / `getGigCount`:
+  - Used by the frontend to render the **Talent Directory**.
+
+In future versions, this contract can evolve to a dedicated **StakedProfileRegistry** with explicit slashing/dispute rules.
+
+### Data Layer: Arkiv (Profiles + Audit Trail)
+
+Using Arkiv ([docs](https://arkiv.dev.golem.network/docs)) we store:
+
+- **PublicProfile entity** (TTL-aware)
+  - `profile_id` (links to on‑chain gig/profile ID)
+  - `role`, `skills`, `summary`
+  - `stake_amount`, `network`
+  - `ttl` – how long this profile is considered “active” (e.g. 1h/24h).
+- **PrivateContact entity** (Gated)
+  - `profile_id`
+  - `email`, `telegram`
+  - Only returned after x402 payment is confirmed.
+- **AuditEvent entity** (Audit Log)
+  - `type`: `UNLOCK`, `FLAG`
+  - `profile_id`, `recruiter_wallet`
+  - `evidence_url`
+  - `ttl`: disputes/evidence also expire to avoid infinite baggage.
+
+This gives us **TTL‑aware UX** (“Active for 42m”) and a **queryable history** of unlocks/flags.
+
+### Access Control: x402 + Crossmint
+
+The backend implements an **x402 pay‑to‑reveal** gateway:
+
+1. Recruiter clicks **“Reveal Contact”** for a profile.
+2. Backend checks Arkiv & chain:
+   - If unpaid → returns `402 Payment Required` with metadata for a Crossmint payment (amount, asset, profile ID).
+   - If paid → returns `200` + the `PrivateContact` fields.
+3. **Crossmint** handles:
+   - Embedded wallet for Recruiters (no self‑custody friction).
+   - Stablecoin (e.g. USDC on Scroll) payments that satisfy the x402 requirement.
+
+### Disputes & Slashing (Roadmap)
+
+- **v1 (Hackathon):** Stake is purely **signal** and escrow; Arkiv is used as an **audit log**.
+- **v2+:** Add **Recruiter dispute bonds** and **Neutral resolution** (DAO/council). A recruiter must stake to accuse. If the claim is valid (fraud), the talent is slashed. If invalid, the recruiter is slashed.
+
+## 4. Technical Stack & Deliverables
+
+- **Frontend:** Next.js (App Router) + `wagmi` + `viem` (Scroll Sepolia).
+- **Smart Contracts:** `GigRegistry.sol` (Scroll Sepolia).
+- **Backend (Design):** FastAPI/Node + Arkiv JSON-RPC + x402 logic.
+
+### Bounties Alignment
+
+- **Arkiv:** Real-time usage + TTL + DeFi-like staking semantics + Audit Trail.
+- **Crossmint:** Fintech + Agentic Commerce (x402 pay-per-lead).
+- **Chroma / Spark:** Potential for audit/identity analysis.
+
+## 5. Data Model & HTTP Flow
+
+### Arkiv Entities Schema (v1)
+
+```json
+{
+  "PublicProfile": {
+    "profile_id": "uint256",
+    "wallet_address": "address",
+    "role": "string",
+    "skills": "string[]",
+    "summary": "string",
+    "stake_amount": "decimal",
+    "created_at": "timestamp",
+    "expires_at": "timestamp"
+  },
+  "PrivateContact": {
+    "profile_id": "uint256",
+    "email": "string",
+    "telegram": "string"
+  },
+  "AuditEvent": {
+    "event_id": "uuid",
+    "type": "enum(UNLOCK, FLAG)",
+    "recruiter_wallet": "address",
+    "tx_hash": "string",
+    "evidence_url": "string",
+    "expires_at": "timestamp"
+  }
+}
+```
+
+### x402 HTTP Flow
+
+1.  **Client:** `GET /profiles/:id/contact`
+2.  **Server:**
+    - Checks payment status.
+    - **Response (402):**
+      ```json
+      {
+        "error": "Payment Required",
+        "payment_session_id": "ses_123...",
+        "price": "5 USDC",
+        "asset": "USDC-Scroll"
+      }
+      ```
+3.  **Client:** Opens Crossmint widget with `payment_session_id`.
+4.  **Crossmint:** Webhook `POST /x402/webhook/crossmint` → Server verifies & updates Arkiv.
+5.  **Client:** Retries `GET /profiles/:id/contact`.
+6.  **Server:**
+    - **Response (200):**
+      ```json
+      {
+        "email": "alice@example.com",
+        "telegram": "@alice_dev"
+      }
+      ```
