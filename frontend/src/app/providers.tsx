@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  CrossmintProvider,
+  CrossmintAuthProvider,
+  CrossmintWalletProvider,
+} from "@crossmint/client-sdk-react-ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import { type State, WagmiProvider } from "wagmi";
@@ -14,16 +19,26 @@ export function Providers(props: {
   const [config] = useState(() => getConfig());
   const [queryClient] = useState(() => new QueryClient());
 
+  const apiKey = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY is not set");
+  }
+
   return (
-    <WagmiProvider
-      config={config}
-      reconnectOnMount={true}
-      initialState={props.initialState}
-    >
-      <QueryClientProvider client={queryClient}>
-        <NetworkChecker />
-        {props.children}
-      </QueryClientProvider>
-    </WagmiProvider>
+    <CrossmintProvider apiKey={apiKey}>
+      <CrossmintAuthProvider>
+        <WagmiProvider
+          config={config}
+          reconnectOnMount={true}
+          initialState={props.initialState}
+        >
+          <QueryClientProvider client={queryClient}>
+            <NetworkChecker />
+            {props.children}
+          </QueryClientProvider>
+        </WagmiProvider>
+      </CrossmintAuthProvider>
+    </CrossmintProvider>
   );
 }
