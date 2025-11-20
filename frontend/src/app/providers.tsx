@@ -8,16 +8,15 @@ import {
 } from "@crossmint/client-sdk-react-ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
-import { type State, WagmiProvider } from "wagmi";
+import { type State } from "wagmi";
 
-import { getConfig } from "@/wagmi";
+import { WagmiWrapper } from "@/components/wagmi-wrapper";
 import { NetworkChecker } from "@/components/network-checker";
 
 export function Providers(props: {
   children: ReactNode;
   initialState?: State;
 }) {
-  const [config] = useState(() => getConfig());
   const [queryClient] = useState(() => new QueryClient());
 
   const apiKey = env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
@@ -28,21 +27,16 @@ export function Providers(props: {
         <CrossmintWalletProvider
           createOnLogin={{
             chain: "scroll-sepolia",
+            type: "evm-mpc-wallet",
             signer: {
               type: "email",
             },
           }}
         >
-          <WagmiProvider
-            config={config}
-            reconnectOnMount={true}
-            initialState={props.initialState}
-          >
-            <QueryClientProvider client={queryClient}>
-              <NetworkChecker />
-              {props.children}
-            </QueryClientProvider>
-          </WagmiProvider>
+          <WagmiWrapper queryClient={queryClient}>
+            <NetworkChecker />
+            {props.children}
+          </WagmiWrapper>
         </CrossmintWalletProvider>
       </CrossmintAuthProvider>
     </CrossmintProvider>

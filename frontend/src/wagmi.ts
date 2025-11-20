@@ -1,11 +1,10 @@
 import { cookieStorage, createConfig, createStorage, http } from "wagmi";
 import { scrollSepolia } from "wagmi/chains";
-import { baseAccount, injected } from "wagmi/connectors";
 
 export function getConfig() {
   return createConfig({
     chains: [scrollSepolia],
-    connectors: [injected(), baseAccount()],
+    connectors: [],
     storage: createStorage({
       storage: cookieStorage,
     }),

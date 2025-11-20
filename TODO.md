@@ -9,6 +9,7 @@
 - [x] add login button
 - [x] make it mobile first
 - [x] implement crossmint wallets
+- [ ] connect crossmint to wagmi
 - [ ] deploy vercel
 - [ ] implement a light "fetching" ai agent (mcp server?)
 - [ ] draft first pitch deck `/documnents/pitch-deck.pdf`

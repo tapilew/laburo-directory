@@ -10,3 +10,8 @@
   - Use overrides for larger screens (e.g., `flex-col` by default, `md:flex-row`).
   - Ensure touch targets are large enough (min 44px) for interactive elements.
   - Avoid fixed widths; use percentages or `max-width` with `mx-auto`.
+
+## Chain Requirements
+- **Scroll Network Only**: All smart contract interactions MUST be on the Scroll network (Scroll Sepolia for testnet, Scroll Mainnet for prod).
+  - Do not use Base, Ethereum, or other chains unless explicitly requested for cross-chain features.
+  - Ensure `createOnLogin` config in Crossmint always targets Scroll.

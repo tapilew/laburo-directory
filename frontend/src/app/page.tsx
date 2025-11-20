@@ -3,19 +3,21 @@
 import React from "react";
 import { parseEther } from "viem";
 import {
-  useAccount,
-  useConnect,
-  useDisconnect,
+  useBalance,
   useReadContract,
-  useWriteContract,
   useWaitForTransactionReceipt,
 } from "wagmi";
+import { useWallet } from "@crossmint/client-sdk-react-ui";
 
 import { GIG_REGISTRY_ADDRESS, gigRegistryAbi } from "@/abi";
 
 import { Button } from "@/components/ui/button";
 import { AuthButton } from "@/components/auth-button";
 import { Wallet } from "@/components/wallet";
+import {
+  createTransaction,
+  pollTransactionStatus,
+} from "@/lib/crossmint-api";
 
 type GigTuple = readonly [
   bigint,
@@ -77,9 +79,8 @@ function toUiGig(tuple: GigTuple): UiGig {
 }
 
 function App() {
-  const account = useAccount();
-  const { connectors, connect, status, error } = useConnect();
-  const { disconnect } = useDisconnect();
+  const { wallet, status: walletStatus } = useWallet();
+  const walletAddress = wallet?.address as `0x${string}` | undefined;
 
   const {
     data: gigCountData,
@@ -113,12 +114,11 @@ function App() {
     ? toUiGig(latestGigData as GigTuple)
     : undefined;
 
-  const {
-    writeContract,
-    data: txHash,
-    error: writeError,
-    isPending,
-  } = useWriteContract();
+  const [txHash, setTxHash] = React.useState<`0x${string}` | undefined>(
+    undefined
+  );
+  const [writeError, setWriteError] = React.useState<Error | null>(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const {
     isLoading: isConfirming,
@@ -134,25 +134,72 @@ function App() {
   const [durationHours, setDurationHours] = React.useState("24");
   const [revealClicked, setRevealClicked] = React.useState(false);
 
+  const {
+    data: balanceData,
+    isLoading: isBalanceLoading,
+  } = useBalance({
+    address: walletAddress,
+    query: {
+      enabled: !!walletAddress,
+    },
+  });
+
+  const requiredStakeWei = React.useMemo(
+    () => parseEther(stake || "0"),
+    [stake]
+  );
+
+  const hasInsufficientFunds =
+    !!balanceData && balanceData.value < requiredStakeWei;
+
   async function handleCreateProfile(event: React.FormEvent) {
     event.preventDefault();
     if (!role || !bio) return;
 
+    if (!wallet) {
+      console.error("Wallet is null");
+      return;
+    }
+
+    if (hasInsufficientFunds) {
+      setWriteError(
+        new Error("Insufficient ETH on Scroll for stake amount and gas")
+      );
+      return;
+    }
+
     const hours = Number(durationHours) || 24;
     const nowSeconds = Math.floor(Date.now() / 1000);
     const deadline = BigInt(nowSeconds + hours * 3600);
+    const stakeValue = requiredStakeWei;
 
     try {
-      writeContract({
-        address: GIG_REGISTRY_ADDRESS,
+      setIsSubmitting(true);
+      setWriteError(null);
+
+      const walletAddress = wallet.address as `0x${string}`;
+
+      const { txId } = await createTransaction({
+        walletAddress,
+        contractAddress: GIG_REGISTRY_ADDRESS,
         abi: gigRegistryAbi,
         functionName: "createGig",
-        args: [role, bio, deadline],
-        value: parseEther(stake || "0"),
+        // Crossmint's REST API uses JSON, so BigInt values must be stringified.
+        args: [role, bio, deadline.toString()],
+        value: stakeValue,
       });
+
+      const hash = await pollTransactionStatus({
+        walletAddress,
+        txId,
+      });
+
+      setTxHash(hash as `0x${string}`);
     } catch (err) {
-      // error is surfaced via writeError
       console.error(err);
+      setWriteError(err as Error);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -178,38 +225,22 @@ function App() {
 
       <section className="border border-border p-4 mb-6 rounded-lg">
         <h2 className="text-xl font-semibold mb-2">Wallet</h2>
-        <p>Network: Scroll Sepolia</p>
-        <p>Status: {account.status}</p>
-        <p>Address: {account.address ?? "Not connected"}</p>
-
-        {account.status === "connected" ? (
-          <Button
-            variant="outline"
-            onClick={() => disconnect()}
-            className="mt-2"
-          >
-            Disconnect
-          </Button>
-        ) : (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {connectors.map((connector) => (
-              <Button
-                key={connector.uid}
-                onClick={() => connect({ connector })}
-                disabled={status === "pending"}
-                variant="outline"
-              >
-                {connector.name}
-              </Button>
-            ))}
-          </div>
+        <p>Network: Scroll Sepolia (MPC Wallet)</p>
+        <p>Status: {walletStatus}</p>
+        <p>Address: {wallet?.address ?? "Not connected"}</p>
+        <p>
+          Balance:{" "}
+          {isBalanceLoading
+            ? "Loading..."
+            : balanceData
+            ? `${formatStake(balanceData.value)} ETH`
+            : "—"}
+        </p>
+        {hasInsufficientFunds && (
+          <p className="text-destructive text-sm">
+            Insufficient ETH on Scroll for this stake amount and gas.
+          </p>
         )}
-        <div className="mt-2">
-          <span>Connection status: {status}</span>
-          {error && (
-            <div className="text-destructive mt-1">{error.message}</div>
-          )}
-        </div>
       </section>
 
       <section className="border border-border p-4 mb-6 rounded-lg">
@@ -278,10 +309,14 @@ function App() {
           <Button
             type="submit"
             disabled={
-              account.status !== "connected" || isPending || isConfirming
+              walletStatus !== "loaded" ||
+              !wallet ||
+              isSubmitting ||
+              isConfirming ||
+              hasInsufficientFunds
             }
           >
-            {isPending || isConfirming
+            {isSubmitting || isConfirming
               ? "Submitting..."
               : "Stake & List Profile"}
           </Button>
@@ -408,10 +443,6 @@ function App() {
           </p>
         )}
       </section>
-
-      <div className="mb-6">
-        <Button>Click me</Button>
-      </div>
 
       <AuthButton />
       <Wallet />
