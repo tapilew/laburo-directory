@@ -1,6 +1,12 @@
-
 # Frontend Rules
 
 ## File Naming
 - Use **kebab-case** for all file names (e.g., `network-checker.tsx`, `user-profile.ts`).
 - Component files should match the kebab-case version of the component name.
+
+## Design Principles
+- **Mobile-First**: Design for mobile screens first, then scale up using Tailwind CSS responsive prefixes (`sm:`, `md:`, `lg:`, `xl:`).
+  - Default styles should apply to mobile devices.
+  - Use overrides for larger screens (e.g., `flex-col` by default, `md:flex-row`).
+  - Ensure touch targets are large enough (min 44px) for interactive elements.
+  - Avoid fixed widths; use percentages or `max-width` with `mx-auto`.

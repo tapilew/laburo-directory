@@ -165,7 +165,7 @@ function App() {
   }, [isConfirmed, refetchGigCount]);
 
   return (
-    <div className="p-6 max-w-[800px] mx-auto">
+    <div className="p-4 md:p-6 w-full max-w-3xl mx-auto">
       <header className="mb-6">
         <h1 className="text-2xl font-bold mb-2">Laburo Directory (Alpha)</h1>
         <p className="text-muted-foreground">
@@ -228,7 +228,7 @@ function App() {
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 placeholder="Rust Engineer, ZK exp"
-                className="w-full mt-1 p-2 border border-input rounded-md bg-background"
+                className="w-full mt-1 p-3 border border-input rounded-md bg-background text-base"
               />
             </label>
           </div>
@@ -241,7 +241,7 @@ function App() {
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="5y exp, worked on DeFi + ZK rollups..."
                 rows={4}
-                className="w-full mt-1 p-2 border border-input rounded-md bg-background"
+                className="w-full mt-1 p-3 border border-input rounded-md bg-background text-base"
               />
             </label>
           </div>
@@ -255,7 +255,7 @@ function App() {
                 step="0.001"
                 value={stake}
                 onChange={(e) => setStake(e.target.value)}
-                className="w-full mt-1 p-2 border border-input rounded-md bg-background"
+                className="w-full mt-1 p-3 border border-input rounded-md bg-background text-base"
               />
             </label>
           </div>
@@ -269,7 +269,7 @@ function App() {
                 step="1"
                 value={durationHours}
                 onChange={(e) => setDurationHours(e.target.value)}
-                className="w-full mt-1 p-2 border border-input rounded-md bg-background"
+                className="w-full mt-1 p-3 border border-input rounded-md bg-background text-base"
               />
             </label>
           </div>
