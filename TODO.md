@@ -3,10 +3,12 @@
 ## develop
 
 - [x] add scroll network to wagmi frontend
-- [x] implement crossmint
+- [x] implement crossmint auth
 - [x] t3 env
 - [x] shadcn/ui
-- [ ] add login button
+- [x] add login button
+- [ ] make it mobile first
+- [ ] implement crossmint wallets
 - [ ] deploy vercel
 - [ ] draft first pitch deck `/documnents/pitch-deck.pdf`
 
