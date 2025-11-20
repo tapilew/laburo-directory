@@ -8,7 +8,7 @@
 - [x] shadcn/ui
 - [x] add login button
 - [x] make it mobile first
-- [ ] implement crossmint wallets
+- [x] implement crossmint wallets
 - [ ] deploy vercel
 - [ ] implement a light "fetching" ai agent (mcp server?)
 - [ ] draft first pitch deck `/documnents/pitch-deck.pdf`

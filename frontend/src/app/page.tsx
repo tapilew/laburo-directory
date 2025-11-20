@@ -15,6 +15,7 @@ import { GIG_REGISTRY_ADDRESS, gigRegistryAbi } from "@/abi";
 
 import { Button } from "@/components/ui/button";
 import { AuthButton } from "@/components/auth-button";
+import { Wallet } from "@/components/wallet";
 
 type GigTuple = readonly [
   bigint,
@@ -413,6 +414,7 @@ function App() {
       </div>
 
       <AuthButton />
+      <Wallet />
     </div>
   );
 }

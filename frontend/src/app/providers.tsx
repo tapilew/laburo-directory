@@ -25,16 +25,25 @@ export function Providers(props: {
   return (
     <CrossmintProvider apiKey={apiKey}>
       <CrossmintAuthProvider>
-        <WagmiProvider
-          config={config}
-          reconnectOnMount={true}
-          initialState={props.initialState}
+        <CrossmintWalletProvider
+          createOnLogin={{
+            chain: "scroll-sepolia",
+            signer: {
+              type: "email",
+            },
+          }}
         >
-          <QueryClientProvider client={queryClient}>
-            <NetworkChecker />
-            {props.children}
-          </QueryClientProvider>
-        </WagmiProvider>
+          <WagmiProvider
+            config={config}
+            reconnectOnMount={true}
+            initialState={props.initialState}
+          >
+            <QueryClientProvider client={queryClient}>
+              <NetworkChecker />
+              {props.children}
+            </QueryClientProvider>
+          </WagmiProvider>
+        </CrossmintWalletProvider>
       </CrossmintAuthProvider>
     </CrossmintProvider>
   );
