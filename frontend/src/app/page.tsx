@@ -1,23 +1,24 @@
+/* eslint-disable react/jsx-no-bind */
 "use client";
 
 import React from "react";
 import { parseEther } from "viem";
 import {
+  useAccount,
   useBalance,
   useReadContract,
   useWaitForTransactionReceipt,
+  useWriteContract,
 } from "wagmi";
-import { useWallet } from "@crossmint/client-sdk-react-ui";
 
 import { GIG_REGISTRY_ADDRESS, gigRegistryAbi } from "@/abi";
-
 import { Button } from "@/components/ui/button";
 import { AuthButton } from "@/components/auth-button";
-import { Wallet } from "@/components/wallet";
-import {
-  createTransaction,
-  pollTransactionStatus,
-} from "@/lib/crossmint-api";
+import { Hero } from "@/components/features/hero";
+import { PaymentModal } from "@/components/features/payment-modal";
+import { TalentList } from "@/components/features/talent-list";
+import { TopUpModal } from "@/components/features/topup-modal";
+import type { UiGig } from "@/lib/talent";
 
 type GigTuple = readonly [
   bigint,
@@ -31,21 +32,8 @@ type GigTuple = readonly [
   bigint
 ];
 
-type UiGig = {
-  id: number;
-  buyer: string;
-  seller: string;
-  title: string;
-  description: string;
-  stakeEth: string;
-  deadline: Date;
-  status: number;
-  bidCount: number;
-};
-
 function formatStake(wei: bigint): string {
   if (wei === BigInt(0)) return "0";
-  // basic wei -> ETH formatter without pulling in extra deps
   const ethString = (Number(wei) / 1e18).toString();
   const [intPart, fracPart = ""] = ethString.split(".");
   const trimmedFrac = fracPart.slice(0, 4).replace(/0+$/, "");
@@ -53,22 +41,11 @@ function formatStake(wei: bigint): string {
 }
 
 function toUiGig(tuple: GigTuple): UiGig {
-  const [
-    id,
-    buyer,
-    seller,
-    title,
-    description,
-    budget,
-    deadline,
-    status,
-    bidCount,
-  ] = tuple;
+  const [id, , , title, description, budget, deadline, status, bidCount] =
+    tuple;
 
   return {
     id: Number(id),
-    buyer,
-    seller,
     title,
     description,
     stakeEth: formatStake(budget),
@@ -79,8 +56,8 @@ function toUiGig(tuple: GigTuple): UiGig {
 }
 
 function App() {
-  const { wallet, status: walletStatus } = useWallet();
-  const walletAddress = wallet?.address as `0x${string}` | undefined;
+  const { address, status: walletStatus } = useAccount();
+  const walletAddress = address;
 
   const {
     data: gigCountData,
@@ -114,25 +91,28 @@ function App() {
     ? toUiGig(latestGigData as GigTuple)
     : undefined;
 
-  const [txHash, setTxHash] = React.useState<`0x${string}` | undefined>(
-    undefined
-  );
-  const [writeError, setWriteError] = React.useState<Error | null>(null);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const {
+    writeContractAsync,
+    data: hash,
+    isPending: isSubmitting,
+    error: writeError,
+  } = useWriteContract();
 
   const {
     isLoading: isConfirming,
     isSuccess: isConfirmed,
     error: txError,
   } = useWaitForTransactionReceipt({
-    hash: txHash,
+    hash,
   });
 
   const [role, setRole] = React.useState("");
   const [bio, setBio] = React.useState("");
   const [stake, setStake] = React.useState("0.01");
   const [durationHours, setDurationHours] = React.useState("24");
-  const [revealClicked, setRevealClicked] = React.useState(false);
+  const [isContactUnlocked, setIsContactUnlocked] = React.useState(false);
+  const [isPaymentOpen, setIsPaymentOpen] = React.useState(false);
+  const [isTopUpOpen, setIsTopUpOpen] = React.useState(false);
 
   const {
     data: balanceData,
@@ -156,15 +136,13 @@ function App() {
     event.preventDefault();
     if (!role || !bio) return;
 
-    if (!wallet) {
-      console.error("Wallet is null");
+    if (!walletAddress) {
+      console.error("Wallet is not connected");
       return;
     }
 
     if (hasInsufficientFunds) {
-      setWriteError(
-        new Error("Insufficient ETH on Scroll for stake amount and gas")
-      );
+      console.error("Insufficient funds");
       return;
     }
 
@@ -174,32 +152,15 @@ function App() {
     const stakeValue = requiredStakeWei;
 
     try {
-      setIsSubmitting(true);
-      setWriteError(null);
-
-      const walletAddress = wallet.address as `0x${string}`;
-
-      const { txId } = await createTransaction({
-        walletAddress,
-        contractAddress: GIG_REGISTRY_ADDRESS,
+      await writeContractAsync({
+        address: GIG_REGISTRY_ADDRESS,
         abi: gigRegistryAbi,
         functionName: "createGig",
-        // Crossmint's REST API uses JSON, so BigInt values must be stringified.
-        args: [role, bio, deadline.toString()],
+        args: [role, bio, deadline],
         value: stakeValue,
       });
-
-      const hash = await pollTransactionStatus({
-        walletAddress,
-        txId,
-      });
-
-      setTxHash(hash as `0x${string}`);
     } catch (err) {
       console.error(err);
-      setWriteError(err as Error);
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
@@ -208,244 +169,263 @@ function App() {
       void refetchGigCount();
       setRole("");
       setBio("");
-      // keep stake/duration as-is for convenience
     }
   }, [isConfirmed, refetchGigCount]);
 
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const friendlyError =
+    writeError || txError
+      ? "Something went wrong while listing your profile. Please try again."
+      : null;
+
+  const listProfileDisabled =
+    walletStatus !== "connected" ||
+    !walletAddress ||
+    isSubmitting ||
+    isConfirming ||
+    hasInsufficientFunds;
+
   return (
-    <div className="p-4 md:p-6 w-full max-w-3xl mx-auto">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">Laburo Directory (Alpha)</h1>
-        <p className="text-muted-foreground">
-          Staked talent directory on Scroll. Talent stakes ETH to signal skin in
-          the game. Recruiters (and their agents) pay per lead via x402 to
-          unlock contact info.
-        </p>
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold tracking-tight">
+              Laburo Directory
+            </span>
+            <span className="hidden text-xs text-muted-foreground sm:inline">
+              Staked talent on Scroll
+            </span>
+          </div>
+          <nav className="hidden items-center gap-3 text-xs text-muted-foreground sm:flex">
+            <button
+              type="button"
+              onClick={() => scrollToSection("talent-directory")}
+              className="hover:text-foreground"
+            >
+              Find talent
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToSection("list-profile")}
+              className="hover:text-foreground"
+            >
+              List profile
+            </button>
+          </nav>
+          <div className="flex items-center gap-2">
+            <span className="hidden rounded-full bg-secondary px-2 py-0.5 text-[0.7rem] font-medium text-secondary-foreground sm:inline">
+              Powered by Scroll
+            </span>
+            <AuthButton />
+          </div>
+        </div>
       </header>
 
-      <section className="border border-border p-4 mb-6 rounded-lg">
-        <h2 className="text-xl font-semibold mb-2">Wallet</h2>
-        <p>Network: Scroll Sepolia (MPC Wallet)</p>
-        <p>Status: {walletStatus}</p>
-        <p>Address: {wallet?.address ?? "Not connected"}</p>
-        <p>
-          Balance:{" "}
-          {isBalanceLoading
-            ? "Loading..."
-            : balanceData
-            ? `${formatStake(balanceData.value)} ETH`
-            : "—"}
-        </p>
-        {hasInsufficientFunds && (
-          <p className="text-destructive text-sm">
-            Insufficient ETH on Scroll for this stake amount and gas.
+      <main className="mx-auto flex max-w-4xl flex-col gap-5 px-4 py-5 sm:py-7">
+        <Hero
+          onBrowseTalentClick={() => scrollToSection("talent-directory")}
+          onListProfileClick={() => scrollToSection("list-profile")}
+        />
+
+        <section className="rounded-lg border border-border bg-card/60 p-4 text-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-sm font-semibold sm:text-base">
+                Your wallet on Scroll
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Connect a wallet to stake ETH on Scroll and unlock talent
+                profiles.
+              </p>
+            </div>
+            <div className="flex flex-col items-start gap-1 text-xs sm:items-end">
+              <span className="rounded-full bg-secondary/60 px-2 py-0.5 text-[0.7rem] text-secondary-foreground">
+                Network: Scroll (testnet)
+              </span>
+              <span className="text-muted-foreground">
+                Status:{" "}
+                <span className="font-medium">
+                  {walletStatus === "connected"
+                    ? "Connected"
+                    : walletStatus === "connecting"
+                    ? "Connecting"
+                    : "Not connected"}
+                </span>
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
+            <div className="break-all text-muted-foreground">
+              <span className="font-medium text-foreground">Address: </span>
+              {walletAddress ?? "Not connected"}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">
+                Balance:{" "}
+                {isBalanceLoading
+                  ? "Loading..."
+                  : balanceData
+                  ? `${formatStake(balanceData.value)} ETH`
+                  : "—"}
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setIsTopUpOpen(true)}
+              >
+                Top up
+              </Button>
+            </div>
+          </div>
+
+          {hasInsufficientFunds && (
+            <p className="mt-2 text-xs text-destructive">
+              You don&apos;t have enough ETH on Scroll for this stake amount and
+              gas. Top up or lower the stake.
+            </p>
+          )}
+        </section>
+
+        <section
+          id="list-profile"
+          className="rounded-lg border border-border bg-card/60 p-4"
+        >
+          <h2 className="text-base font-semibold sm:text-lg">
+            List your staked profile
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+            Publish a profile backed by ETH on Scroll. You keep full custody;
+            stake simply acts as a signal that you&apos;re serious.
           </p>
-        )}
-      </section>
 
-      <section className="border border-border p-4 mb-6 rounded-lg">
-        <h2 className="text-xl font-semibold mb-2">List your staked profile</h2>
-        <p className="mb-4 text-muted-foreground">
-          List your profile by staking ETH. This is not a payment to a platform,
-          it is a signal: if your profile is clearly fake in later versions of
-          the protocol, stake can be partially slashed.
-        </p>
-
-        <form onSubmit={handleCreateProfile} className="space-y-4">
-          <div>
-            <label className="block mb-1 font-medium">
-              Role / Skillset
+          <form
+            onSubmit={handleCreateProfile}
+            className="mt-4 space-y-4 text-sm"
+          >
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground">
+                Role / skillset
+              </label>
               <input
                 type="text"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                placeholder="Rust Engineer, ZK exp"
-                className="w-full mt-1 p-3 border border-input rounded-md bg-background text-base"
+                placeholder="Solidity engineer, full-stack, growth, PM..."
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
-            </label>
-          </div>
+            </div>
 
-          <div>
-            <label className="block mb-1 font-medium">
-              Bio / Experience
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground">
+                Bio / experience
+              </label>
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="5y exp, worked on DeFi + ZK rollups..."
+                placeholder="5+ years leading engineering teams, built DeFi protocols on Scroll and Ethereum..."
                 rows={4}
-                className="w-full mt-1 p-3 border border-input rounded-md bg-background text-base"
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
-            </label>
-          </div>
+            </div>
 
-          <div>
-            <label className="block mb-1 font-medium">
-              Stake Amount (ETH)
-              <input
-                type="number"
-                min="0"
-                step="0.001"
-                value={stake}
-                onChange={(e) => setStake(e.target.value)}
-                className="w-full mt-1 p-3 border border-input rounded-md bg-background text-base"
-              />
-            </label>
-          </div>
-
-          <div>
-            <label className="block mb-1 font-medium">
-              Listing Duration (hours)
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={durationHours}
-                onChange={(e) => setDurationHours(e.target.value)}
-                className="w-full mt-1 p-3 border border-input rounded-md bg-background text-base"
-              />
-            </label>
-          </div>
-
-          <Button
-            type="submit"
-            disabled={
-              walletStatus !== "loaded" ||
-              !wallet ||
-              isSubmitting ||
-              isConfirming ||
-              hasInsufficientFunds
-            }
-          >
-            {isSubmitting || isConfirming
-              ? "Submitting..."
-              : "Stake & List Profile"}
-          </Button>
-
-          <div className="mt-2">
-            {writeError && (
-              <div className="text-destructive">{writeError.message}</div>
-            )}
-            {txError && (
-              <div className="text-destructive">{txError.message}</div>
-            )}
-            {txHash && (
+            <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                Tx hash:{" "}
-                <code className="text-xs bg-muted p-1 rounded">
-                  {String(txHash)}
-                </code>
+                <label className="block text-xs font-medium text-muted-foreground">
+                  Stake amount (ETH)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={stake}
+                  onChange={(e) => setStake(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+                <p className="mt-1 text-[0.7rem] text-muted-foreground">
+                  You can always withdraw your stake after the engagement.
+                </p>
               </div>
-            )}
-            {isConfirmed && (
-              <div className="text-green-600 dark:text-green-400">
-                Profile listed on-chain. Refreshing directory...
+
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">
+                  Listing duration (hours)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={durationHours}
+                  onChange={(e) => setDurationHours(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+                <p className="mt-1 text-[0.7rem] text-muted-foreground">
+                  How long your profile stays highlighted in the directory.
+                </p>
               </div>
-            )}
-          </div>
-        </form>
-      </section>
+            </div>
 
-      <section className="border border-border p-4 mb-6 rounded-lg">
-        <h2 className="text-xl font-semibold mb-2">
-          Staked talent directory (from Scroll)
-        </h2>
-        {isLoadingCount && (
-          <p className="text-muted-foreground">Loading profiles...</p>
-        )}
-        {gigCountError && (
-          <p className="text-destructive">
-            Error loading profiles: {gigCountError.message}
-          </p>
-        )}
-        <p className="mb-2">Total profiles on-chain: {gigCount}</p>
+            <Button type="submit" disabled={listProfileDisabled}>
+              {isSubmitting || isConfirming
+                ? "Submitting…"
+                : "Stake & list profile"}
+            </Button>
 
-        {gigCount === 0 && (
-          <p className="text-muted-foreground">
-            No profiles yet. Be the first to stake and list.
-          </p>
-        )}
-
-        {latestGigId && latestGig && (
-          <div className="border border-border p-4 mt-3 rounded-lg bg-card text-card-foreground">
-            <h3 className="text-lg font-bold">
-              {latestGig.title || "Untitled profile"}
-            </h3>
-            <p className="mt-1">{latestGig.description}</p>
-            <p className="mt-2 text-sm font-medium">
-              🛡️ Staked: {latestGig.stakeEth} ETH (on Scroll Sepolia, contract
-              escrow)
-            </p>
-            <p className="text-sm">
-              Status:{" "}
-              {(() => {
-                switch (latestGig.status) {
-                  case 0:
-                    return "Open / Listed";
-                  case 1:
-                    return "Assigned";
-                  case 2:
-                    return "Completed";
-                  default:
-                    return `Unknown (${latestGig.status})`;
-                }
-              })()}
-            </p>
-            <p className="text-sm">
-              Deadline (listing TTL placeholder):{" "}
-              {latestGig.deadline.toString()}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Bid count (unused in this MVP): {latestGig.bidCount}
-            </p>
-
-            <div className="mt-2">
-              {!revealClicked ? (
-                <>
-                  <p className="mb-2">
-                    Contact: <strong>[LOCKED]</strong> — 402 Payment Required
-                    via x402/Crossmint (mocked).
-                  </p>
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setRevealClicked(true);
-                      // in the real flow this would trigger x402 + Crossmint
-                      window.alert(
-                        "402 Payment Required — this is where the Crossmint x402 pay-to-reveal flow will live."
-                      );
-                    }}
-                  >
-                    Reveal Contact
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <p>
-                    Contact (mocked): <strong>alice@example.com</strong> /{" "}
-                    <strong>@alice_dev</strong>
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    In the real app this would be loaded from Arkiv after a
-                    successful x402 payment.
-                  </p>
-                </>
+            <div className="mt-2 space-y-1 text-xs">
+              {friendlyError && (
+                <p className="text-destructive">{friendlyError}</p>
+              )}
+              {hash && (
+                <p className="text-muted-foreground">
+                  Transaction sent on Scroll:{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-[0.7rem]">
+                    {String(hash)}
+                  </code>
+                </p>
+              )}
+              {isConfirmed && (
+                <p className="text-emerald-500">
+                  Profile listed on Scroll. Your profile will appear in the
+                  directory shortly.
+                </p>
               )}
             </div>
-          </div>
-        )}
+          </form>
+        </section>
 
-        {latestGigId && isLoadingLatestGig && (
-          <p className="text-muted-foreground">Loading latest profile…</p>
-        )}
-        {latestGigId && latestGigError && (
-          <p className="text-destructive">
-            Error loading latest profile: {latestGigError.message}
-          </p>
-        )}
-      </section>
+        <TalentList
+          totalCount={gigCount}
+          latestGig={latestGig}
+          isLoading={isLoadingCount || isLoadingLatestGig}
+          error={
+            gigCountError || latestGigError
+              ? "Unable to load directory."
+              : undefined
+          }
+          isContactUnlocked={isContactUnlocked}
+          onUnlockContact={() => setIsPaymentOpen(true)}
+        />
+      </main>
 
-      <AuthButton />
-      <Wallet />
+      <PaymentModal
+        open={isPaymentOpen}
+        onOpenChange={(open) => {
+          setIsPaymentOpen(open);
+        }}
+        amountEth={latestGig?.stakeEth ?? "0.01"}
+        onCompleted={() => {
+          setIsContactUnlocked(true);
+        }}
+      />
+
+      <TopUpModal open={isTopUpOpen} onOpenChange={setIsTopUpOpen} />
     </div>
   );
 }

@@ -1,17 +1,17 @@
 "use client";
 
-import { useWallet } from "@crossmint/client-sdk-react-ui";
+import { useAccount } from "wagmi";
 
 export function Wallet() {
-  const { wallet, status } = useWallet();
+  const { address, isConnecting, isDisconnected } = useAccount();
 
-  if (status === "in-progress") {
+  if (isConnecting) {
     return <div>Loading...</div>;
   }
 
-  if (status === "loaded" && wallet) {
-    return <div>Connected: {wallet.address}</div>;
+  if (isDisconnected) {
+    return <div>Wallet not connected</div>;
   }
 
-  return <div>Wallet not connected</div>;
+  return <div>Connected: {address}</div>;
 }

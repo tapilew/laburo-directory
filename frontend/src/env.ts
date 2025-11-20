@@ -7,26 +7,18 @@ export const env = createEnv({
    * a type-level and at runtime.
    */
 
-  client: {
-    NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY: z.string().min(1),
-  },
+  client: {},
 
   /**
    * Server-only environment variables. These are never exposed to the client.
    */
-  server: {
-    CROSSMINT_SERVER_API_KEY: z.string().min(1),
-  },
+  server: {},
 
   /**
    * What object holds the environment variables at runtime. This is usually
    * `process.env` or `import.meta.env`.
    */
-  runtimeEnv: {
-    NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY:
-      process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY,
-    CROSSMINT_SERVER_API_KEY: process.env.CROSSMINT_SERVER_API_KEY,
-  },
+  runtimeEnv: {},
 
   /**
    * By default, this library will feed the environment variables directly to
