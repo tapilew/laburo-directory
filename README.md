@@ -1,156 +1,105 @@
 # Laburo Directory
 
-Decentralized, **staked** recruitment directory.
+Decentralized, **staked** recruitment directory on the **Scroll** network.
 
-## 1. The Problem
+## 1. What this hackathon MVP actually ships
 
-Recruitment is broken by noise and low skin-in-the-game.
+- **Network:** Scroll Sepolia only.
+- **On-chain core:** A generic `GigRegistry` contract deployed on Scroll Sepolia at  
+  `0xe734917ec960dbabcff216ea9d50cf5f7c0b81d5`.
+  - We reuse it as a **staked profile registry** instead of building a bespoke contract.
+  - `createGig(title, description, deadline)` with `msg.value` is interpreted as **“stake & list profile”**.
+- **Frontend dapp (Next.js + wagmi + viem):**
+  - Talent can create a profile by staking ETH and describing their role.
+  - Recruiters can browse all on-chain profiles and see the **stake as a trust signal**.
+  - The “pay to reveal contact” flow is **UI-only / mocked** via a simple payment modal; there is **no real x402 or Arkiv integration**.
+- **No backend services** are required for the shipped MVP; everything the app uses lives on Scroll (plus static frontend logic).
 
-- **Recruiters** burn hours on stale, low-intent profiles (LinkedIn, bulk databases, scraped lists).
-- **Job seekers** get spammed by bots and low‑quality outreach because their contact info is cheap to abuse.
-- **No economic signal**: being listed costs nothing, so everyone can lie, overstate skills, or go inactive with zero downside.
+In other words, the submission is a **Scroll-only, fully on-chain directory** that proves the staked-profile UX, while the more advanced data and payment layers remain future work.
 
-## 2. The Solution: Staked Talent Directory
-
-Laburo Directory is a **staked, on‑chain talent directory** where:
-
-- **Job seekers stake ETH** to list a profile. Lying or disappearing becomes expensive.
-- **Recruiters (or their AI agents) pay per lead** to unlock contact info via the **x402 pay‑to‑reveal protocol**.
-- **Arkiv** stores profiles and dispute evidence with **Time‑To‑Live (TTL)** and an **on‑chain audit trail**.
-
-Core ideas:
-
-- **Skin in the game:** Profiles carry a visible stake (escrow) that can be slashed only under strict fraud conditions in future versions.
-- **Monetized bots:** We don’t fight bots; we make them **pay you**. Agents can crawl/analyze the directory, but x402 gates sensitive data behind micro‑payments.
-- **Freshness by design:** Arkiv TTL means profiles and evidence auto‑expire, so recruiters only see **currently active** talent.
-
-## 3. How It Works (MVP Architecture)
+## 2. How it works today
 
 ### Roles
 
-- **Talent (Job Seekers):** stake ETH, publish a profile.
-- **Recruiters / Talent Agents (AI):** search, evaluate, and pay to reveal contact.
-- **Protocol Backend:** enforces x402 (HTTP `402 Payment Required`) and writes/read from Arkiv.
+- **Talent (Job Seekers):** stake ETH and publish a profile (a “gig”) on Scroll.
+- **Recruiters / Agents:** browse profiles and reason about candidates using the visible on-chain stake.
 
-### On‑chain: Staked Profiles (GigRegistry)
+### On-chain: `GigRegistry` as profile registry
 
-We reuse a simple contract (`GigRegistry`, deployed on Scroll Sepolia at  
-`0xe734917ec960dbabcff216ea9d50cf5f7c0b81d5`) as the first building block:
+The `GigRegistry` contract (see `backend/scroll_test/src/GigRegistry.sol`) was originally designed as a **minimal Upwork-style escrow**:
 
-- `createGig(title, description, deadline)` with `msg.value`:
-  - Interpreted in this MVP as **“Stake & List Profile”**, not a classic gig budget.
-  - `title` → **Role / Skillset** (e.g. “Rust Engineer, ZK exp”).
-  - `description` → **Public summary**.
-  - `budget` (ETH) → **Staked amount**, visible in the UI as “Skin in the game”.
-- `getGig` / `getGigCount`:
-  - Used by the frontend to render the **Talent Directory**.
+- `createGig` escrows ETH and stores the gig metadata.
+- `submitBid`, `acceptBid`, `completeGig`, and `releasePayment` implement a simple marketplace flow.
 
-In future versions, this contract can evolve to a dedicated **StakedProfileRegistry** with explicit slashing/dispute rules.
+For this project we:
 
-### Data Layer: Arkiv (Profiles + Audit Trail)
+- Treat each gig as a **“staked talent profile”** (title + description + stake).
+- Use `getGigCount` / `getGig` from the frontend to render the **Talent Directory**.
+- Rely solely on Scroll for data and settlement; there is no off-chain storage yet.
 
-Using Arkiv ([docs](https://arkiv.dev.golem.network/docs)) we store:
+This keeps the on-chain surface small while still giving recruiters a **live, economic signal** per profile.
 
-- **PublicProfile entity** (TTL-aware)
-  - `profile_id` (links to on‑chain gig/profile ID)
-  - `role`, `skills`, `summary`
-  - `stake_amount`, `network`
-  - `ttl` – how long this profile is considered “active” (e.g. 1h/24h).
-- **PrivateContact entity** (Gated)
-  - `profile_id`
-  - `email`, `telegram`
-  - Only returned after x402 payment is confirmed.
-- **AuditEvent entity** (Audit Log)
-  - `type`: `UNLOCK`, `FLAG`
-  - `profile_id`, `recruiter_wallet`
-  - `evidence_url`
-  - `ttl`: disputes/evidence also expire to avoid infinite baggage.
+## 3. Tech stack
 
-This gives us **TTL‑aware UX** (“Active for 42m”) and a **queryable history** of unlocks/flags.
+- **Contracts:** Solidity `GigRegistry.sol` on Scroll Sepolia (Foundry project under `backend/scroll_test`).
+- **Frontend:** Next.js (App Router) + `wagmi` + `viem`, reading from the deployed `GIG_REGISTRY_ADDRESS` in `frontend/src/abi.ts`.
+- **Tooling:** Foundry for contracts; standard Next.js toolchain for the frontend.
 
-### Access Control: x402 + Crossmint
+Background architecture and design notes (Arkiv, x402, alternatives, etc.) live in `documents/BRAINSTORMING.md`.
 
-The backend implements an **x402 pay‑to‑reveal** gateway:
+## 4. Running the project
 
-1. Recruiter clicks **“Reveal Contact”** for a profile.
-2. Backend checks Arkiv & chain:
-   - If unpaid → returns `402 Payment Required` with metadata for a Crossmint payment (amount, asset, profile ID).
-   - If paid → returns `200` + the `PrivateContact` fields.
-3. **Crossmint** handles:
-   - Embedded wallet for Recruiters (no self‑custody friction).
-   - Stablecoin (e.g. USDC on Scroll) payments that satisfy the x402 requirement.
+### Contracts (Scroll Sepolia)
 
-### Disputes & Slashing (Roadmap)
+From `backend/scroll_test`:
 
-- **v1 (Hackathon):** Stake is purely **signal** and escrow; Arkiv is used as an **audit log**.
-- **v2+:** Add **Recruiter dispute bonds** and **Neutral resolution** (DAO/council). A recruiter must stake to accuse. If the claim is valid (fraud), the talent is slashed. If invalid, the recruiter is slashed.
+- Install Foundry and dependencies (see `backend/scroll_test/README.md` for details).
+- Build:
 
-## 4. Technical Stack & Deliverables
-
-- **Frontend:** Next.js (App Router) + `wagmi` + `viem` (Scroll Sepolia).
-- **Smart Contracts:** `GigRegistry.sol` (Scroll Sepolia).
-- **Backend (Design):** FastAPI/Node + Arkiv JSON-RPC + x402 logic.
-
-### Bounties Alignment
-
-- **Arkiv:** Real-time usage + TTL + DeFi-like staking semantics + Audit Trail.
-- **Crossmint:** Fintech + Agentic Commerce (x402 pay-per-lead).
-- **Chroma / Spark:** Potential for audit/identity analysis.
-
-## 5. Data Model & HTTP Flow
-
-### Arkiv Entities Schema (v1)
-
-```json
-{
-  "PublicProfile": {
-    "profile_id": "uint256",
-    "wallet_address": "address",
-    "role": "string",
-    "skills": "string[]",
-    "summary": "string",
-    "stake_amount": "decimal",
-    "created_at": "timestamp",
-    "expires_at": "timestamp"
-  },
-  "PrivateContact": {
-    "profile_id": "uint256",
-    "email": "string",
-    "telegram": "string"
-  },
-  "AuditEvent": {
-    "event_id": "uuid",
-    "type": "enum(UNLOCK, FLAG)",
-    "recruiter_wallet": "address",
-    "tx_hash": "string",
-    "evidence_url": "string",
-    "expires_at": "timestamp"
-  }
-}
+```bash
+forge build
 ```
 
-### x402 HTTP Flow
+- Test:
 
-1.  **Client:** `GET /profiles/:id/contact`
-2.  **Server:**
-    - Checks payment status.
-    - **Response (402):**
-      ```json
-      {
-        "error": "Payment Required",
-        "payment_session_id": "ses_123...",
-        "price": "5 USDC",
-        "asset": "USDC-Scroll"
-      }
-      ```
-3.  **Client:** Opens Crossmint widget with `payment_session_id`.
-4.  **Crossmint:** Webhook `POST /x402/webhook/crossmint` → Server verifies & updates Arkiv.
-5.  **Client:** Retries `GET /profiles/:id/contact`.
-6.  **Server:**
-    - **Response (200):**
-      ```json
-      {
-        "email": "alice@example.com",
-        "telegram": "@alice_dev"
-      }
-      ```
+```bash
+forge test
+```
+
+- Deploy to Scroll Sepolia:
+
+```bash
+forge script script/Deploy.s.sol:Deploy --rpc-url scroll_sepolia --broadcast --verify
+```
+
+The deployment script will print the `GigRegistry` address. The frontend is currently wired to  
+`0xe734917ec960dbabcff216ea9d50cf5f7c0b81d5`; update `frontend/src/abi.ts` if you re-deploy.
+
+### Frontend dapp
+
+From `frontend`:
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Then open `http://localhost:3000` and connect a wallet configured for **Scroll Sepolia**.
+
+## 5. Future directions (post-hackathon)
+
+The current codebase intentionally stops at a **Scroll-only, on-chain directory**. The original design explored a richer architecture:
+
+- **Arkiv-backed data layer:**
+  - Store TTL-aware `PublicProfile`, gated `PrivateContact`, and `AuditEvent` entities off-chain.
+  - Use TTLs to ensure the directory only surfaces **fresh, recently active** talent.
+- **x402-style pay-to-reveal:**
+  - Enforce `402 Payment Required` for contact reveal, backed by a facilitator that supports Scroll.
+  - Use **Crossmint-style embedded wallets** to let recruiters pay per lead without full self-custody setup.
+  - Replace the current mocked payment modal with a real on-chain payment + unlock flow.
+- **Dedicated StakedProfileRegistry:**
+  - Replace the generic `GigRegistry` with a contract purpose-built for talent staking, profile slashing, and dispute flows.
+- **Disputes & slashing:**
+  - Introduce recruiter dispute bonds and neutral resolution (council/DAO) with symmetric slashing for bad actors.
+
+Those ideas, along with alternative approaches and integration notes (Arkiv, x402, Crossmint, etc.), are captured in more detail in `documents/BRAINSTORMING.md` for future iterations.
