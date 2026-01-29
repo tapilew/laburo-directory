@@ -9,14 +9,17 @@
 - [x] add login button
 - [x] make it mobile first
 - [x] implement crossmint wallets
-- [ ] connect crossmint to wagmi
-- [ ] deploy vercel
+- [x] (try to) connect crossmint to wagmi
+- [x] deploy vercel
+- [x] draft first pitch deck `/documents/pitch-deck.md`
+- [x] upgrade nextjs
+- [x] redesign ux/ui
+- [ ] config frontend skills
 - [ ] implement a light "fetching" ai agent (mcp server?)
-- [ ] draft first pitch deck `/documnents/pitch-deck.pdf`
 
 ## deliver - `/documents`
 
-- [ ] Git repo: [LINK]
+- [x] Git repo: [LINK]
 - [ ] Pitch deck: [NOMBRE_PDF]
 - [ ] Brainstorming: [NOMBRE_PDF]
 - [ ] Business Model Canvas: [NOMBRE_PDF]

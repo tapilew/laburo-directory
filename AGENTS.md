@@ -22,3 +22,7 @@
 ## Package Manager
 
 - Use **pnpm** for all frontend commands (e.g., `pnpm install`, `pnpm dev`). Do not use `npm` or `yarn` unless explicitly requested.
+
+---
+
+use the frontend-design skill, btw.
