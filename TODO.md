@@ -12,6 +12,9 @@
 - [x] (try to) connect crossmint to wagmi
 - [x] deploy vercel
 - [x] draft first pitch deck `/documents/pitch-deck.md`
+- [ ] upgrade nextjs
+- [ ] redesign ux/ui
+- [ ] config frontend skills
 - [ ] implement a light "fetching" ai agent (mcp server?)
 
 ## deliver - `/documents`
